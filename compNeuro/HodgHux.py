@@ -1,5 +1,13 @@
 #Hodg and Hux
+
+#A. L. Hodgkin and A. F. Huxley, "A Quantitative Description
+#of Membrane Current and Its Application to Conduction and
+#Excitation in Nerve," Journal of Physiology, 117, 1952 pp. 500–544.
+
 #Adapted from Anderson, Britt
+
+#C(dV(t)/dt) = I(t) − [(gNa*(m^3) * h* (V(t) − ENa) + gKn^4(V(t)−EK)+gL(V(t)−EL)]
+
 
 import matplotlib.pyplot as plt
 import math as m
@@ -8,12 +16,12 @@ vInit = 0.0
 dt = 0.01
 
 #Constraints from Gerstner and Kistler (2002)
-eNa = 115 #Sodium reversal
-gNa = 120 #Sodium Conductance
-eK = -12 #Potassium reversal
-gK = 36 #Potassium Conductance
-eL = 10.6 #Leak voltage
-gL = 0.3 #Leak Voltage
+eNa = 115       #Sodium reversal
+gNa = 120       #Sodium Conductance
+eK = -12          #Potassium reversal
+gK = 36           #Potassium Conductance
+eL = 10.6        #Leak voltage
+gL = 0.3          #Leak Voltage
 
 #Updating Rule
 def upd(x, dltaX):
