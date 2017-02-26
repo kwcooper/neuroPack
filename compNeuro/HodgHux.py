@@ -15,7 +15,7 @@ gK = 36 #Potassium Conductance
 eL = 10.6 #Leak voltage
 gL = 0.3 #Leak Voltage
 
-
+#Updating Rule
 def upd(x, dltaX):
     return(x + dltaX * dt)
 
@@ -24,22 +24,22 @@ def mnh0(a,b):
 
 #AB
 def alphaM(v):
-    return 0.1*(v+40.0)/(1.0 - m.exp(-(v+40.0) / 10.0))
+    return ((2.5 - 0.1*v) / (m.exp (2.5 - 0.1*v) - 1))
 
 def betaM(v):
-    return 4.0*m.exp(-(v+65.0) / 18.0)
+    return (4 * m.exp((-1) * v / 18))
 
 def alphaH(v):
-    return 0.07*m.exp(-(v+65.0) / 20.0)
+    return ( 0.07 * m.exp(( -1) * v / 20))
 
 def betaH(v):
-    return 1.0/(1.0 + m.exp(-(v+35.0) / 10.0))
+    return ( 1.0 / (m.exp(3 - (0.1) * v) +1))
 
-def alphaN(v):
-    return 0.01*(v+55.0)/(1.0 - m.exp(-(v+55.0) / 10.0))
+def alphaN(v):   
+    return ((0.1 - 0.01 * v) / (m.exp(1 - (0.1 * v)) -1))
 
 def betaN(v):
-    return 0.125*m.exp(-(v+65) / 80.0)
+    return 0.125 / m.exp((-1) *  v / 80.0)
 
 am0 = alphaM(0)
 bm0 = betaM(0)
@@ -55,30 +55,62 @@ h0 = mnh0(ah0,bh0)
 #Membrane Activity
 #  Sodium 
 def INa(m, h, V):
-    return gNa * m**3 * h * (V - eNa)
+    return gNa * (m**3) * h * (V - eNa)
 #  Potassium
 def IK(n, V):
-    return gK  * n**4 * (V - eK)
+    return gK  * (n**4) * (V - eK)
 #  Leak
 def IL(V):
-    return gL  * (V - el)
+    return gL  * (V - eL)
 
 
 #def iStim(t): 
 #    return 10*(t>100) - 10*(t>200) + 35*(t>300)
 
+#Updates values
 def newS(V,m,n,h,t):
-    if (t < 5.0) or (t > 6.0):
+    if (t < 6.0) or (t > 7.0):
         iStim = 0.0
     else:
         iStim = 20.0
 
     dv = iStim - (INa(m, h, V) + IK(n, V)  + IL(V))
-    dm = alphaM(V) * (1.0-m) - betaM(V) * m 
-    dn = alphaN(V) * (1.0-n) - betaN(V) * n
-    dh = alphaH(V) * (1.0-h) - betaH(V) * h
-    
+    dm = alphaM(V) * (1.0 - m) - betaM(V) * m 
+    dn = alphaN(V) * (1.0 - n) - betaN(V) * n
+    dh = alphaH(V) * (1.0 - h) - betaH(V) * h
 
+    vp = upd(V, dv)
+    tp = t + dt
+    mp = upd(m, dm)
+    np = upd(n, dn)
+    hp = upd(h, dh)
+
+    return vp, mp, np, hp, tp
+
+
+vs = []
+ms = []
+ns = []
+hs = []
+ts = []
+
+a,b,c,d,e = newS(vInit ,m0,n0,h0,0.0)
+vs.append(a)
+ms.append(b)
+ns.append(c)
+hs.append(d)
+ts.append(e)
+
+for i in range(2, 3000):
+    a,b,c,d,e = newS(vs[-1], ms[-1], ns[-1], hs[-1], ts[-1])
+    vs.append(a)
+    ms.append(b)
+    ns.append(c)
+    hs.append(d)
+    ts.append(e)
+
+plt.plot(ts, vs)
+plt.show()
 
 
 
