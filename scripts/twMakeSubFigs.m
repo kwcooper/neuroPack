@@ -1,4 +1,4 @@
- function twMakeFigs(force)
+ function twMakeSubFigs(force)
 %figPath = fullfile(dropboxPath,SLpath,'..','figures');
 
 %this is keiland's version
@@ -70,6 +70,9 @@ figInfo.saveFig = 1;
 figInfo.fnameRoot = fullfile('figs',[figInfo.name, '_', figInfo.session]);
 figInfo.fig_type = 'png'; % options = {'png','ps','pdf'}
 
+figInfo.chOrdTxt = chTxt;
+figInfo.ref = ref;
+
 if ~exist('figs', 'dir')
     mkdir figs
 end
@@ -78,12 +81,13 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%  THE BUSINESS END OF THE SCRIPT %%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  %peakDists(tInfo, root, tInfo.Fs, cycles, figInfo)
-  quiverPlot(tInfo,chTxt, figInfo)
+  quiverData = processQuiver(tInfo,chTxt, figInfo);
 %  corrPlot(tInfo,chTxt, figInfo)
 %  thetaGreaterMeanPower(tInfo,figInfo)
-  plotAvgWaveImg(root, cycles, ref, figInfo)
-  plotAvgWaves(root,tInfo.Fs, cycles, figInfo)
+ % plotAvgWaveImg(root, cycles, ref, figInfo)
+ awData = processAvgWaves(root,tInfo.Fs, cycles, figInfo);
 % plotRawWaves(root,tInfo.Fs, figInfo)
+  subplotOne(quiverData, awData, figInfo)
 
 keyboard
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -134,16 +138,18 @@ title('peak dists')
 end
 
 
-function quiverPlot(tInfo,chOrdTxt,figInfo)
+function [quiverData] = processQuiver(tInfo,chOrdTxt,figInfo)
 % plots the polar coherence between electrodes
 [u,v] = pol2cart(tInfo.thetaShiftAngle,tInfo.thetaShiftRbar);
-figure; quiver(u(2:2:end,2:2:end),v(2:2:end,2:2:end)); axis ij;  
-title([figInfo.name, chOrdTxt, ', Blank (1403)']);
+%figure; quiver(u(2:2:end,2:2:end),v(2:2:end,2:2:end)); axis ij;  
+%title([figInfo.name, chOrdTxt, ', Blank (1403)']);
 
-if figInfo.saveFig
-    plotName = 'quiver';
-    printFigure(gcf, [figInfo.fnameRoot, '_',plotName,'.',figInfo.fig_type],'imgType',figInfo.fig_type);
-end
+% if figInfo.saveFig
+%     plotName = 'quiver';
+%     printFigure(gcf, [figInfo.fnameRoot, '_',plotName,'.',figInfo.fig_type],'imgType',figInfo.fig_type);
+% end
+quiverData.u = u;
+quiverData.v = v;
 end
 
 function corrPlot(tInfo, chOrdTxt, figInfo)
@@ -227,17 +233,17 @@ for I=1:16
     MeanThetaWave(I,:)=nanmean(catPlus(3,EegSnips),3);
 end
 
-figure; imagesc(MeanThetaWave);
+% figure; imagesc(MeanThetaWave);
+% title([figInfo.name, 'Mean Theta Wave; ref:' + string(ref)])
 
-title([figInfo.name, 'Mean Theta Wave; ref:' + string(ref)])
-if figInfo.saveFig
-    plotName = 'meanWaveHeatmap';
-    printFigure(gcf, [figInfo.fnameRoot, '_',plotName,'.',figInfo.fig_type],'imgType',figInfo.fig_type);
+% if figInfo.saveFig
+%     plotName = 'meanWaveHeatmap';
+%     printFigure(gcf, [figInfo.fnameRoot, '_',plotName,'.',figInfo.fig_type],'imgType',figInfo.fig_type);
+% end
+
 end
 
-end
-
-function plotAvgWaves(root, Fs, cycles, figInfo)
+function [awData] = processAvgWaves(root, Fs, cycles, figInfo)
 
 CycleTs=root.b_lfp(1).ts(cycles);
 epochSize = .100;
@@ -250,17 +256,37 @@ for I=1:16
     EegSnips=root.lfp.signal;
     MeanThetaWave(I,:)=nanmean(catPlus(3,EegSnips),3);
 end
-data = MeanThetaWave(1:2:end,:);
-plotLFP(data, Fs, 2.5,[],0);
+waveData = MeanThetaWave(1:2:end,:);
 
+% plotLFP(data, Fs, 2.5,[],0);
+% title([figInfo.name, 'Mean Theta Wave'])
+% 
+% if figInfo.saveFig
+%     plotName = 'meanWaveTrace';
+%     printFigure(gcf, [figInfo.fnameRoot, '_',plotName,'.',figInfo.fig_type],'imgType',figInfo.fig_type);
+% end
+
+awData.waveData = waveData;
+awData.Fs = Fs;
+end
+
+function subplotOne(quiverData,awData, figInfo)
+figure;
+subplot(2,2,1);
+
+
+subplot(2,2,2); 
+
+
+subplot(2,2,3);
+plotLFP(awData.waveData, awData.Fs, 2.5,[],0);
 title([figInfo.name, 'Mean Theta Wave'])
-if figInfo.saveFig
-    plotName = 'meanWaveTrace';
-    printFigure(gcf, [figInfo.fnameRoot, '_',plotName,'.',figInfo.fig_type],'imgType',figInfo.fig_type);
-end
 
-end
 
+subplot(2,2,4);
+quiver(quiverData.u(2:2:end,2:2:end),quiverData.v(2:2:end,2:2:end)); axis ij;  
+title([figInfo.name, figInfo.chOrdTxt, ', Blank (1403)']);
+end
 function [root,tInfo] = prepareDataForFigs(sInd,sessions,chOrd,force)
 % see if data has been pre-computed, if not, compute it!
 if ~force && exist('twMakeFigs_workingData.mat','file')
