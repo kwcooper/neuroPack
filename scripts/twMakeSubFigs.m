@@ -272,17 +272,30 @@ end
 
 function subplotOne(quiverData,awData, figInfo)
 figure;
+% Pannel
 subplot(2,2,1);
 
-
+% Pannel
 subplot(2,2,2); 
+[nElecs,tPts,nSets] = size(awData.waveData);
+nR = floor(sqrt(nSets));
+nC = ceil(nSets/nR);
+
+t = (1:tPts)/awData.Fs;
+disp(2.5)
+lfp_ = awData.waveData / (-1 * 2.5 * rms(awData.waveData(:)));
+offsets = repmat([1:nElecs]',1,tPts,nSets);
+lfp_ = lfp_ + offsets;
+plot(t,lfp_,'k'); axis ij
 
 
+
+% Pannel
 subplot(2,2,3);
-plotLFP(awData.waveData, awData.Fs, 2.5,[],0);
-title([figInfo.name, 'Mean Theta Wave'])
+% plotLFP(awData.waveData, awData.Fs, 2.5,[],0);
+% title([figInfo.name, 'Mean Theta Wave'])
 
-
+%Quiver Pannel
 subplot(2,2,4);
 quiver(quiverData.u(2:2:end,2:2:end),quiverData.v(2:2:end,2:2:end)); axis ij;  
 title([figInfo.name, figInfo.chOrdTxt, ', Blank (1403)']);
