@@ -80,14 +80,14 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%  THE BUSINESS END OF THE SCRIPT %%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
- %peakDists(tInfo, root, tInfo.Fs, cycles, figInfo)
+ pdData = processPeakDists(tInfo, root, tInfo.Fs, cycles, figInfo);
   quiverData = processQuiver(tInfo,chTxt, figInfo);
 %  corrPlot(tInfo,chTxt, figInfo)
 %  thetaGreaterMeanPower(tInfo,figInfo)
- % plotAvgWaveImg(root, cycles, ref, figInfo)
+  plotAvgWaveImg(root, cycles, ref, figInfo)
  awData = processAvgWaves(root,tInfo.Fs, cycles, figInfo);
 % plotRawWaves(root,tInfo.Fs, figInfo)
-  subplotOne(quiverData, awData, figInfo)
+  subplotOne(awData, pdData, quiverData, figInfo)
 
 keyboard
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -95,18 +95,18 @@ keyboard
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 end
 
-function peakDists(tInfo, root, Fs, cycles, figInfo)
-% CycleTs=root.b_lfp(1).ts(cycles);
-% Epochs = [CycleTs-0.125 CycleTs+0.125];
-% root.epoch=Epochs;
-% 
-% for I=1:16
-%     root.active_lfp=I;
-%     EegSnips=root.lfp.signal;
-%     MeanThetaWave(I,:)=nanmean(catPlus(3,EegSnips),3);
-% end
-% data = MeanThetaWave(1:2:end,:);
-% %[pks,locs,w,p] = findpeaks(data)
+function pdData = processPeakDists(tInfo, root, Fs, cycles, figInfo)
+CycleTs=root.b_lfp(1).ts(cycles);
+Epochs = [CycleTs-0.125 CycleTs+0.125];
+root.epoch=Epochs;
+
+for I=1:16
+    root.active_lfp=I;
+    EegSnips=root.lfp.signal;
+    MeanThetaWave(I,:)=nanmean(catPlus(3,EegSnips),3);
+end
+
+
 % 
 % 
 % M = randi(99, 4, 8);
@@ -124,17 +124,26 @@ function peakDists(tInfo, root, Fs, cycles, figInfo)
 %     printFigure(gcf, [figInfo.fnameRoot, '_',plotName,'.',figInfo.fig_type],'imgType',figInfo.fig_type);
 % end
 
-for I=1:16
-    root.active_lfp=I;
-    EegSnips=root.lfp.signal;
-    smoothMTW(I,:)=smoothts(nanmean(catPlus(3,EegSnips),3), 'g');
-end
-smoothMTW = MeanThetaWave(1:2:end,:);
+%if we wanted to smooth it
+% for I=1:16
+%     root.active_lfp=I;
+%     EegSnips=root.lfp.signal;
+%     smoothMTW(I,:)=smoothts(nanmean(catPlus(3,EegSnips),3), 'g');
+% end
+% smoothMTW = MeanThetaWave(1:2:end,:);
 
 %imagesc(tsa)
 %figure; scatter(linspace(1,16,16),tInfo.thetaShiftAngle(1:16))
 %figure; imagesc(diag(tInfo.thetaShiftAngle, 1));
-title('peak dists')
+%title('peak dists')
+
+%looks for max val index in waves
+for i = 1:16
+    [pk, pkInd(i,:)] = max(MeanThetaWave(i,:));
+end
+%figure; plot(pkInd(2:2:end))
+%could subtract these to normalize across sessions
+pdData.pkInd = pkInd; 
 end
 
 
@@ -241,6 +250,9 @@ end
 %     printFigure(gcf, [figInfo.fnameRoot, '_',plotName,'.',figInfo.fig_type],'imgType',figInfo.fig_type);
 % end
 
+figure;
+polarplot(MeanThetaWave(1:end))
+%compass(MeanThetaWave(7:end))
 end
 
 function [awData] = processAvgWaves(root, Fs, cycles, figInfo)
@@ -270,13 +282,19 @@ awData.waveData = waveData;
 awData.Fs = Fs;
 end
 
-function subplotOne(quiverData,awData, figInfo)
+function subplotOne(awData,pdData ,quiverData, figInfo)
 figure;
-% Pannel
+%Raw Waves Pannel
 subplot(2,2,1);
 
 % Pannel
 subplot(2,2,2); 
+plot(pdData.pkInd(2:2:end))
+
+
+
+%Averaged Waves Pannel
+subplot(2,2,3);
 [nElecs,tPts,nSets] = size(awData.waveData);
 nR = floor(sqrt(nSets));
 nC = ceil(nSets/nR);
@@ -286,14 +304,7 @@ disp(2.5)
 lfp_ = awData.waveData / (-1 * 2.5 * rms(awData.waveData(:)));
 offsets = repmat([1:nElecs]',1,tPts,nSets);
 lfp_ = lfp_ + offsets;
-plot(t,lfp_,'k'); axis ij
-
-
-
-% Pannel
-subplot(2,2,3);
-% plotLFP(awData.waveData, awData.Fs, 2.5,[],0);
-% title([figInfo.name, 'Mean Theta Wave'])
+plot(t,lfp_,'k'); axis ij 
 
 %Quiver Pannel
 subplot(2,2,4);
