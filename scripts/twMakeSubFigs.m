@@ -20,7 +20,8 @@
 
 sessions = {...
 'RioNovelty',  '2017-07-27_16-00',         '2017-08-09_16-57-57',   '',    [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
-'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_19-14-01',   '',    [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
+'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_19-14-01',   'sml',    [39 38 60 57], 1; ...
+'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_19-14-01',   'all',    [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
 'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_11-43-00',   '',    [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
 'Rio',         '2017-08-11_CircleTrack',   '2017-08-11_12-54-28',   '',    [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
 'Rio',         '2017-08-20_CircleTrack',   '2017-08-20_12-41-36',   '',    [11 12 14 13 8 7 5 6 27 28 26 25 20 19 21 22], 8;...
@@ -80,12 +81,12 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%  THE BUSINESS END OF THE SCRIPT %%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
- pdData = processPeakDists(tInfo, root, tInfo.Fs, cycles, figInfo);
+ awData = processAvgWaves(root,tInfo.Fs, cycles, figInfo,chOrd);
+ pdData = processPeakDists(awData);
   quiverData = processQuiver(tInfo,chTxt, figInfo);
 %  corrPlot(tInfo,chTxt, figInfo)
 %  thetaGreaterMeanPower(tInfo,figInfo)
-  plotAvgWaveImg(root, cycles, ref, figInfo)
- awData = processAvgWaves(root,tInfo.Fs, cycles, figInfo);
+  plotAvgWaveImg(root, cycles, ref, figInfo,chOrd)
 % plotRawWaves(root,tInfo.Fs, figInfo)
   subplotOne(awData, pdData, quiverData, figInfo)
 
@@ -95,18 +96,7 @@ keyboard
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 end
 
-function pdData = processPeakDists(tInfo, root, Fs, cycles, figInfo)
-CycleTs=root.b_lfp(1).ts(cycles);
-Epochs = [CycleTs-0.125 CycleTs+0.125];
-root.epoch=Epochs;
-
-for I=1:16
-    root.active_lfp=I;
-    EegSnips=root.lfp.signal;
-    MeanThetaWave(I,:)=nanmean(catPlus(3,EegSnips),3);
-end
-
-
+function pdData = processPeakDists(awData)
 % 
 % 
 % M = randi(99, 4, 8);
@@ -137,9 +127,16 @@ end
 %figure; imagesc(diag(tInfo.thetaShiftAngle, 1));
 %title('peak dists')
 
+
+% tmp = tInfo.thetaShiftAngle;
+% %tmp = tInfo.thetaShiftAngle(6:2:12,6:2:12);
+% d2p = [mean(diag(tmp,0)) mean(diag(tmp,-1)) mean(diag(tmp,-2)) mean(diag(tmp,-3))];
+% subplot(2,2,1); plot([0:3],rad2deg(d2p),'o-'); xlim([-0.5 3.5])
+
+
 %looks for max val index in waves
-for i = 1:16
-    [pk, pkInd(i,:)] = max(MeanThetaWave(i,:));
+for i = 1:size(awData.waveData,1)
+    [~, pkInd(i)] = max(awData.waveData(i,:));
 end
 %figure; plot(pkInd(2:2:end))
 %could subtract these to normalize across sessions
@@ -150,7 +147,7 @@ end
 function [quiverData] = processQuiver(tInfo,chOrdTxt,figInfo)
 % plots the polar coherence between electrodes
 [u,v] = pol2cart(tInfo.thetaShiftAngle,tInfo.thetaShiftRbar);
-%figure; quiver(u(2:2:end,2:2:end),v(2:2:end,2:2:end)); axis ij;  
+%figure; quiver(u(2:2:end,2:2:end),v(2:2:end,2:2:end)); axis ij;
 %title([figInfo.name, chOrdTxt, ', Blank (1403)']);
 
 % if figInfo.saveFig
@@ -159,6 +156,13 @@ function [quiverData] = processQuiver(tInfo,chOrdTxt,figInfo)
 % end
 quiverData.u = u;
 quiverData.v = v;
+
+tmp = tInfo.thetaShiftAngle;
+avgPkShft = nan(1,size(tmp,1));
+for shft = 1:size(tmp,1)
+    avgPkShft(shft) = mean(diag(tmp,-shft));
+end
+quiverData.avgPkShft = avgPkShft;
 end
 
 function corrPlot(tInfo, chOrdTxt, figInfo)
@@ -214,7 +218,7 @@ end
 
 function plotRawWaves(root, Fs, figInfo)
 %make the raw waves from lfp signal
-for i=1:16
+for i=1:length(root.b_lfp)
     rawWaves(i, :) = root.b_lfp(i).signal;
 end
 %plot raw eegWaves
@@ -230,13 +234,13 @@ end
 
 end
 
-function plotAvgWaveImg(root, cycles, ref, figInfo)
+function plotAvgWaveImg(root, cycles, ref, figInfo, chOrd)
 CycleTs=root.b_lfp(ref).ts(cycles);
 Epochs = [CycleTs-0.125 CycleTs+0.125];
 root.epoch=Epochs;
 
 %for each channel, fetch the eeg snips, then average them
-for I=1:16
+for I=1:length(chOrd)
     root.active_lfp=I; 
     EegSnips=root.lfp.signal;
     MeanThetaWave(I,:)=nanmean(catPlus(3,EegSnips),3);
@@ -255,7 +259,7 @@ polarplot(MeanThetaWave(1:end))
 %compass(MeanThetaWave(7:end))
 end
 
-function [awData] = processAvgWaves(root, Fs, cycles, figInfo)
+function [awData] = processAvgWaves(root, Fs, cycles, figInfo, chOrd)
 
 CycleTs=root.b_lfp(1).ts(cycles);
 epochSize = .100;
@@ -263,12 +267,12 @@ Epochs = [CycleTs-0.100 CycleTs+0.100]; %changed this from .125
 fprintf('calculating based of epochs of ', epochSize, '\n');
 root.epoch=Epochs;
 
-for I=1:16
+for I=1:length(chOrd)
     root.active_lfp=I;
     EegSnips=root.lfp.signal;
     MeanThetaWave(I,:)=nanmean(catPlus(3,EegSnips),3);
 end
-waveData = MeanThetaWave(1:2:end,:);
+waveData = MeanThetaWave;
 
 % plotLFP(data, Fs, 2.5,[],0);
 % title([figInfo.name, 'Mean Theta Wave'])
@@ -289,8 +293,9 @@ subplot(2,2,1);
 
 % Pannel
 subplot(2,2,2); 
-plot(pdData.pkInd(2:2:end))
-
+%plot(pdData.pkInd(2:2:end)); hold on;
+plot(rad2deg(quiverData.avgPkShft)) %This is a better way of computing it
+title('Average Peak Shift')
 
 
 %Averaged Waves Pannel
@@ -308,9 +313,11 @@ plot(t,lfp_,'k'); axis ij
 
 %Quiver Pannel
 subplot(2,2,4);
-quiver(quiverData.u(2:2:end,2:2:end),quiverData.v(2:2:end,2:2:end)); axis ij;  
+quiver(quiverData.u(1:1:end,1:1:end),quiverData.v(1:1:end,1:1:end)); axis ij;  
 title([figInfo.name, figInfo.chOrdTxt, ', Blank (1403)']);
+
 end
+
 function [root,tInfo] = prepareDataForFigs(sInd,sessions,chOrd,force)
 % see if data has been pre-computed, if not, compute it!
 if ~force && exist('twMakeFigs_workingData.mat','file')
