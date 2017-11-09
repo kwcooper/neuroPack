@@ -168,15 +168,15 @@ for shft = 1:size(tmp,1)
 end
 
 % calculate the slope of the average peak shift
-aps = rad2deg(avgPkShft);
-x = linspace(0,size(mns,2),size(mns,2)); 
+aps = rad2deg(avgPkShft(1,1:3)); % !! this is hardcoded to only pick first 3 to avoid the NaN's
+x = linspace(0,size(aps,2),size(aps,2)); 
 p = polyfit(x,aps,1);
 pv = polyval(x,p);
 
 
 quiverData.avgPkShft = rad2deg(avgPkShft); %convert to degrees for plotting
-quiverdata.p = p;
-quiverdata.pv = pv;
+quiverData.p = p;
+quiverData.pv = pv;
 end
 
 function corrPlot(tInfo, chOrdTxt, figInfo)
@@ -310,7 +310,8 @@ subplot(2,2,1);
 subplot(2,2,2); 
 %plot(pdData.pkInd(2:2:end)); hold on; %This looks at time between peaks
 plot(quiverData.avgPkShft) %Better; looks at average across phase
-title('Average Peak Shift')
+%text(0,0,['slope:', quiverData.p(1)]) %doesn't work well with subplot
+title(['Average Peak Shift | Slope =', num2str(quiverData.p(1))]) %!! picking arbitrary slope
 %axis should be electrodes? maybe?
 
 
