@@ -35,3 +35,5 @@ end
 
 
 plotLFP(rawWaves(8:2:16,:), Fs)
+
+plotLFP(MeanThetaWave, Fs)

@@ -1,8 +1,11 @@
  function twMakeSubFigs(force)
+%figPath = fullfile(dropboxPath,SLpath,'..','figures');
+
+%this is keiland's version
+
+%update these values or copy and paste them
 
 
-
-% legacy code from the 
 % Rat = 'Tio';
 % Session = '170703_1251_CircleTrack';
 % Recording = '2017-07-03_13-08-30';
@@ -15,15 +18,14 @@
 %2017-08-10_11-43-00 - fine
 %2017-08-11_12-54-28 - looks fine
 
-%
 sessions = {...
-'RioNovelty',  '2017-07-27_16-00',         '2017-08-09_16-57-57',   '',       [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
+'RioNovelty',  '2017-07-27_16-00',         '2017-08-09_16-57-57',   '',    [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
 'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_19-14-01',   'sml',    [39 38 60 57], 1; ...
 'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_19-14-01',   'all',    [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
-'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_11-43-00',   '',       [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
-'Rio',         '2017-08-11_CircleTrack',   '2017-08-11_12-54-28',   '',       [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
-'Rio',         '2017-08-20_CircleTrack',   '2017-08-20_12-41-36',   '',       [11 12 14 13 8 7 5 6 27 28 26 25 20 19 21 22], 8;...
-'Rio',         '2017-08-22_CircleTrack',   '2017-08-22_14-01-24',   '',       [11 12 14 13 8 7 5 6 27 28 26 25 20 19 21 22], 8;...
+'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_11-43-00',   '',    [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
+'Rio',         '2017-08-11_CircleTrack',   '2017-08-11_12-54-28',   '',    [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
+'Rio',         '2017-08-20_CircleTrack',   '2017-08-20_12-41-36',   '',    [11 12 14 13 8 7 5 6 27 28 26 25 20 19 21 22], 8;...
+'Rio',         '2017-08-22_CircleTrack',   '2017-08-22_14-01-24',   '',    [11 12 14 13 8 7 5 6 27 28 26 25 20 19 21 22], 8;...
 };
 %s
 
@@ -284,20 +286,19 @@ awData.waveData = waveData;
 awData.Fs = Fs;
 end
 
-function subplotOne(awData,pdData,quiverData, figInfo)
+function subplotOne(awData,pdData ,quiverData, figInfo)
 figure;
-
-%% Raw Waves Pannel
+%Raw Waves Pannel
 subplot(2,2,1);
 
-%% Raw data Pannel
+% Pannel
 subplot(2,2,2); 
-%plot(pdData.pkInd(2:2:end)); hold on; %This looks at time between peaks
-plot(rad2deg(quiverData.avgPkShft)) %Better; looks at average across phase
+%plot(pdData.pkInd(2:2:end)); hold on;
+plot(rad2deg(quiverData.avgPkShft)) %This is a better way of computing it
 title('Average Peak Shift')
 
 
-%% Averaged Waves Pannel
+%Averaged Waves Pannel
 subplot(2,2,3);
 [nElecs,tPts,nSets] = size(awData.waveData);
 nR = floor(sqrt(nSets));
@@ -309,15 +310,137 @@ lfp_ = awData.waveData / (-1 * 2.5 * rms(awData.waveData(:)));
 offsets = repmat([1:nElecs]',1,tPts,nSets);
 lfp_ = lfp_ + offsets;
 plot(t,lfp_,'k'); axis ij 
-%add the find peaks function here? %Smooth?
-%Change axis to reflect proper channels
-title('Averaged Waves')
 
-%% Quiver Pannel
+%Quiver Pannel
 subplot(2,2,4);
 quiver(quiverData.u(1:1:end,1:1:end),quiverData.v(1:1:end,1:1:end)); axis ij;  
-title([figInfo.name, ', ',figInfo.chOrdTxt, ', Blank (1403)']);
-%Axis should change to reflect the proper channels
+title([figInfo.name, figInfo.chOrdTxt, ', Blank (1403)']);
 
+end
 
+function [root,tInfo] = prepareDataForFigs(sInd,sessions,chOrd,force)
+% see if data has been pre-computed, if not, compute it!
+if ~force && exist('twMakeFigs_workingData.mat','file')
+    fprintf('Found precomputed data, loading it instead of recomputing it. . .');
+    L = load('twMakeFigs_workingData.mat');
+    root = L.root;
+    tInfo = L.tInfo;
+    fprintf('done.\n')
+else
+    fprintf('Computing basic data, this may take a min \nbut don''t worry, I''ll save it when I''m done\n');
+     
+     
+    dsFreq = 600; %data sample frequency? what is this?
+    nChan = length(chOrd);
+    fsVid = 120;
+ 
+    %%  Data Handeling
+    if ~exist('root', 'var')
+         
+        %[data, timestamps, info] = load_open_ephys_data_faster(filename, varargin)
+        % tmp to take advantage of epoching
+        tmpRoot = CMBHOME.Session('name','experiment1','epoch',[-inf inf],'b_ts',[0:0.01:21.0028*60],'fs_video',120);
+        if exist('experiment1_100.raw.kwd','file')
+            tmpRoot.path_lfp = repmat({'experiment1_100.raw.kwd'},1,length(chOrd));
+        else
+            for ch_ind = 1:length(sessions{sInd,5})
+                path_lfp{ch_ind} = ['100_CH',num2str(sessions{sInd,5}(ch_ind)),'.continuous'];
+                if ~exist(path_lfp{ch_ind},'file'), error('%s does not exist as lfp.\n',path_lfp{ch_ind}); end
+            end
+            tmpRoot.path_lfp = path_lfp;
+        end
+        tmpRoot = tmpRoot.LoadLFP(1,'downsample',dsFreq,'chOrd',chOrd(1));
+         
+         
+        fprintf('Creating root object... \n')
+        root = CMBHOME.Session('name','experiment1','epoch',[-inf inf],'b_ts',[0:1/fsVid:max(tmpRoot.b_lfp(1).ts)],'fs_video',fsVid);
+        root.path_lfp = tmpRoot.path_lfp;
+        root.user_def.sessionInfo = sessions(sInd,:);
+        %save experiment1.mat root
+         
+        fprintf('Loading lfp... \n')
+        root = root.LoadLFP(1:nChan,'downsample',dsFreq,'chOrd',chOrd);
+        root.active_lfp = nChan;
+    end
+     
+    %need to fix this somehow
+    % %if isempty(root.b_lfp(1))
+    %     fprintf('Loading lfp... \n')
+    %     root = root.LoadLFP(1:nChan,'downsample',dsFreq,'chOrd',chOrd);
+    %     root.active_lfp = nChan;
+    % %end
+     
+    root = rmDataBlips(root);
+     
+    %iterate through the channels
+    chans = [1:nChan];
+    dataDS = nan(length(chans),length(CMBHOME.Utils.ContinuizeEpochs(root.lfp.signal)));
+    for i = 1:length(chans)
+        root.active_lfp = chans(i);
+        dataDS(i,:) = CMBHOME.Utils.ContinuizeEpochs(root.lfp.signal);
+    end
+     
+    %% Extract Theta
+     
+    tInfo = {};
+    tInfo.session = sessions(sInd,:);
+    tInfo.Fs = root.lfp.fs;
+    tInfo.Wn_theta = [6/(tInfo.Fs/2) 10/(tInfo.Fs/2)];
+    [tInfo.btheta,tInfo.atheta] = butter(3,tInfo.Wn_theta);
+    tInfo.signal = dataDS;
+     
+    % extract theta with phase and power
+    fprintf('theta extraction \n')
+     
+    tInfo.theta_filt = nan(size(dataDS));
+    tInfo.theta_phase =  nan(size(dataDS));
+    tInfo.theta_amp =  nan(size(dataDS));
+    % why is this iterating through each data point, and not taking all of the data? k
+    for iD =  1:size(dataDS,1)
+        tInfo.theta_filt(iD,:) = filtfilt(tInfo.btheta,tInfo.atheta,dataDS(iD,:)); %filter the data
+        tInfo.theta_phase(iD,:) = atan2(imag(hilbert(tInfo.theta_filt(iD,:))), tInfo.theta_filt(iD,:));
+        tInfo.theta_amp(iD,:) = abs(hilbert(tInfo.theta_filt(iD,:)));
+    end
+     
+    %%
+    % Focus on epochs of data with high theta amplitude
+    % high amplitude will be based on greater than 2 std above the mean
+    % so, compute session-wide mean and standard deviation of theta power
+    % using the last channel (update this if another channel makes more sense)
+     
+    % I might need to change this k
+    % Also, why not all theta? quick n dirty or the whole project?
+    ch = size(tInfo.theta_amp,1);
+    tInfo.thetaMeanAmp = mean(tInfo.theta_amp(ch,:));
+    stdAmp = std(tInfo.theta_amp(ch,:));
+     
+    % now find the high theta
+    %highTheta = find(theta_amp(ch,:)>(meanAmp+2*stdAmp));
+    %highTheta = find(theta_amp(end,:)>(meanAmp));
+    tInfo.highTheta = find(tInfo.theta_amp(end,:)>(tInfo.thetaMeanAmp-stdAmp));
+    tInfo.highThetaEp = mat2cell(tInfo.highTheta, 1, diff([0 find([(diff(tInfo.highTheta) > 1) 1])]));
+    lengthEp = cellfun(@length,tInfo.highThetaEp);
+    inds_long = lengthEp>300;
+    tInfo.highThetaEp_long = tInfo.highThetaEp(inds_long);
+     
+    %find the theta shift for high theta channels
+    clear thetaShift
+    for iT = 1:length(tInfo.highThetaEp_long)
+        for iC1 = 1:length(chans) 
+            for iC2 = 1:length(chans)
+                tInfo.thetaShift{iT}(iC1,iC2,:) = circDiff([tInfo.theta_phase(iC1,tInfo.highThetaEp_long{iT})', ...
+                    tInfo.theta_phase(iC2,tInfo.highThetaEp_long{iT})'],2,'rad'); % changed orientation of data
+            end
+        end
+    end
+     
+    tInfo.thetaShiftMat = cat(3,tInfo.thetaShift{:}); % used cat instead of cell2mat
+    
+    fprintf('Basing calculations off of %2.2f s of data\n',size(tInfo.thetaShiftMat,3)/tInfo.Fs);
+    [tInfo.thetaShiftAngle,tInfo.thetaShiftRbar] = circmean(tInfo.thetaShiftMat,3);
+     
+    % if it needed to be computed, save it out
+    save('twMakeFigs_workingData.mat','root','tInfo','-v7.3');
+    fprintf('Saving precomputed data to save time next time\n');
+end
 end

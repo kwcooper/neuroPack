@@ -1,4 +1,6 @@
  function twMakeSubFigs(force)
+% TWMAKESUBFIGS Analysis package for traveling 
+ %this is keiland's version
 
 
 
