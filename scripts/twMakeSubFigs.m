@@ -1,4 +1,8 @@
  function twMakeSubFigs(force)
+% TWMAKESUBFIGS Analysis package for the traveling wave project!
+% This is Keiland's version as of 8 Nov 17
+% 
+% Currently: working & in active devolopment
 
 
 
