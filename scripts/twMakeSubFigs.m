@@ -141,6 +141,7 @@ for i = 1:size(awData.waveData,1)
     [~, pkInd(i)] = max(awData.waveData(i,:));
 end
 %figure; plot(pkInd(2:2:end))
+
 %could subtract these to normalize across sessions
 pdData.pkInd = pkInd; 
 end
@@ -159,12 +160,23 @@ function [quiverData] = processQuiver(tInfo,chOrdTxt,figInfo)
 quiverData.u = u;
 quiverData.v = v;
 
+% calculate the average peak shift 
 tmp = tInfo.thetaShiftAngle;
 avgPkShft = nan(1,size(tmp,1));
 for shft = 1:size(tmp,1)
     avgPkShft(shft) = mean(diag(tmp,-shft));
 end
-quiverData.avgPkShft = avgPkShft;
+
+% calculate the slope of the average peak shift
+aps = rad2deg(avgPkShft);
+x = linspace(0,size(mns,2),size(mns,2)); 
+p = polyfit(x,aps,1);
+pv = polyval(x,p);
+
+
+quiverData.avgPkShft = rad2deg(avgPkShft); %convert to degrees for plotting
+quiverdata.p = p;
+quiverdata.pv = pv;
 end
 
 function corrPlot(tInfo, chOrdTxt, figInfo)
@@ -294,11 +306,12 @@ figure;
 %% Raw Waves Pannel
 subplot(2,2,1);
 
-%% Raw data Pannel
+%% avg wave Pannel
 subplot(2,2,2); 
 %plot(pdData.pkInd(2:2:end)); hold on; %This looks at time between peaks
-plot(rad2deg(quiverData.avgPkShft)) %Better; looks at average across phase
+plot(quiverData.avgPkShft) %Better; looks at average across phase
 title('Average Peak Shift')
+%axis should be electrodes? maybe?
 
 
 %% Averaged Waves Pannel
