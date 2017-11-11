@@ -26,13 +26,14 @@ sessions = {...
 'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_19-14-01',   'sml',       [39 38 60 57], 1; ...
 'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_19-14-01',   'all',       [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
 'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_11-43-00',   'all',       [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
+'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_11-43-00',   'sml',       [39 38 60 57], 1; ...
 'Rio',         '2017-08-11_CircleTrack',   '2017-08-11_12-54-28',   'all',       [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
 'Rio',         '2017-08-20_CircleTrack',   '2017-08-20_12-41-36',   'all',       [11 12 14 13 8 7 5 6 27 28 26 25 20 19 21 22], 8;...
 'Rio',         '2017-08-22_CircleTrack',   '2017-08-22_14-01-24',   'all',       [11 12 14 13 8 7 5 6 27 28 26 25 20 19 21 22], 8;...
 };
 
 % This selects the session you want to analyze
-sInd = 2;
+sInd = 5;
  
 Rat =  sessions{sInd,1};
 Session =  sessions{sInd,2};
@@ -309,6 +310,9 @@ figure;
 
 %% Raw Waves Pannel
 subplot(2,2,1);
+t = text(0.02,0.98,'A','Units', 'Normalized', 'VerticalAlignment', 'Top');
+s = t.FontSize;
+t.FontSize = 12;
 
 %% avg wave Pannel
 subplot(2,2,2); 
@@ -316,6 +320,9 @@ subplot(2,2,2);
 plot(quiverData.avgPkShft) %Better; looks at average across phase
 %text(0,0,['slope:', quiverData.p(1)]) %doesn't work well with subplot
 title(['Average Peak Shift | Slope =', num2str(quiverData.p(1))]) %!! picking arbitrary slope
+t = text(0.02,0.98,'B','Units', 'Normalized', 'VerticalAlignment', 'Top');
+s = t.FontSize;
+t.FontSize = 12;
 %axis should be electrodes? maybe?
 
 
@@ -334,12 +341,19 @@ plot(t,lfp_,'k'); axis ij
 %add the find peaks function here? %Smooth?
 %Change axis to reflect proper channels
 title('Averaged Waves')
+t = text(0.02,0.98,'C','Units', 'Normalized', 'VerticalAlignment', 'Top');
+s = t.FontSize;
+t.FontSize = 12;
 
 %% Quiver Pannel
 subplot(2,2,4);
 quiver(quiverData.u(1:1:end,1:1:end),quiverData.v(1:1:end,1:1:end)); axis ij;  
 title([figInfo.name, ', ',figInfo.chOrdTxt, ', Blank (1403)']);
 %Axis should change to reflect the proper channels
+t = text(0.02,0.98,'D','Units', 'Normalized', 'VerticalAlignment', 'Top');
+s = t.FontSize;
+t.FontSize = 12;
 
+suptitle([figInfo.name, ' Data: ', figInfo.session])
 
 end
