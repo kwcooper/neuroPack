@@ -19,20 +19,21 @@
 %2017-08-10_11-43-00 - fine
 %2017-08-11_12-54-28 - looks fine
 
-%
+% Contains ephys file information, as well as channel mappings
+% Rat Session Recording selectedChannels? channels reference
 sessions = {...
-'RioNovelty',  '2017-07-27_16-00',         '2017-08-09_16-57-57',   '',       [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
-'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_19-14-01',   'sml',    [39 38 60 57], 1; ...
-'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_19-14-01',   'all',    [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
-'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_11-43-00',   '',       [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
-'Rio',         '2017-08-11_CircleTrack',   '2017-08-11_12-54-28',   '',       [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
-'Rio',         '2017-08-20_CircleTrack',   '2017-08-20_12-41-36',   '',       [11 12 14 13 8 7 5 6 27 28 26 25 20 19 21 22], 8;...
-'Rio',         '2017-08-22_CircleTrack',   '2017-08-22_14-01-24',   '',       [11 12 14 13 8 7 5 6 27 28 26 25 20 19 21 22], 8;...
+'RioNovelty',  '2017-07-27_16-00',         '2017-08-09_16-57-57',   'all',       [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
+'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_19-14-01',   'sml',       [39 38 60 57], 1; ...
+'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_19-14-01',   'all',       [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
+'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_11-43-00',   'all',       [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
+'Rio',         '2017-08-11_CircleTrack',   '2017-08-11_12-54-28',   'all',       [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
+'Rio',         '2017-08-20_CircleTrack',   '2017-08-20_12-41-36',   'all',       [11 12 14 13 8 7 5 6 27 28 26 25 20 19 21 22], 8;...
+'Rio',         '2017-08-22_CircleTrack',   '2017-08-22_14-01-24',   'all',       [11 12 14 13 8 7 5 6 27 28 26 25 20 19 21 22], 8;...
 };
-%s
 
+% This selects the session you want to analyze
 sInd = 2;
-
+ 
 Rat =  sessions{sInd,1};
 Session =  sessions{sInd,2};
 Recording =  sessions{sInd,3};
@@ -42,29 +43,34 @@ ref = sessions{sInd,6};
 
 workingDir = fullfile(ratLibPath,Rat,Session,Recording); cd(workingDir);
 
+% forces a recalculation of the data 
 if ~exist('force') || isempty(force), force = 0; end
 if force
     fprintf('Forcing data recalculation...\n')
 end
-[root,tInfo] = prepareDataForFigs(sInd,sessions,chOrd,force);
+
+% This is where all the data extraction is happening, the function is in a
+% sepperate file. Definitely worth looking at!
+% This returns two structs, root, and tInfo, which are used throughout the rest 
+% of the script. Checking for the already computed data happens there too. 
+[root,tInfo] = twPrepareDataForFigs(sInd,sessions,chOrd,force);
 
 
 %%
-%new theta Extraction
+% new theta Extraction
 disp("Extracting theta cycles...");
 metho = 'hilbert';
 disp("useing " + metho)
 root.epoch=[-inf,inf];
 band = [6,10];
 [thetaPhs,~,~] = extractThetaPhase(tInfo.signal(ref,:),tInfo.Fs,metho,band);
-[cycles,~] = parseThetaCycles(thetaPhs,tInfo.Fs,band);
+[cycles,~] = parseThetaCycles(thetaPhs,tInfo.Fs,band); 
 
 inds = find(cycles);
 %%
-%Figures
-%keyboard
 
-%Set up the figure info
+
+% Set up the figure info
 figInfo = {};
 figInfo.name = Rat;
 figInfo.session = Session;
@@ -81,11 +87,11 @@ if ~exist('figs', 'dir')
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%  THE BUSINESS END OF THE SCRIPT %%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%  THE BUSINESS END OF THE FUNCTION %%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  awData = processAvgWaves(root,tInfo.Fs, cycles, figInfo,chOrd);
  pdData = processPeakDists(awData);
-  quiverData = processQuiver(tInfo,chTxt, figInfo);
+ quiverData = processQuiver(tInfo,chTxt, figInfo);
 %  corrPlot(tInfo,chTxt, figInfo)
 %  thetaGreaterMeanPower(tInfo,figInfo)
   plotAvgWaveImg(root, cycles, ref, figInfo,chOrd)
@@ -93,9 +99,7 @@ end
   subplotOne(awData, pdData, quiverData, figInfo)
 
 keyboard
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%                  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 end
 
 function pdData = processPeakDists(awData)
