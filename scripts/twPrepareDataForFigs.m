@@ -42,7 +42,8 @@ else
         tic
         root = root.LoadLFP(1:nChan,'downsample',dsFreq,'chOrd',chOrd);
         root.active_lfp = nChan;
-        toc
+        toc; fprintf('(To load the LFP) \n');
+        
     end
      
     % need to fix this somehow -- 11/10 this probably isn't necessary anymore
@@ -71,7 +72,8 @@ else
     tInfo.Wn_theta = [6/(tInfo.Fs/2) 10/(tInfo.Fs/2)];
     [tInfo.btheta,tInfo.atheta] = butter(3,tInfo.Wn_theta);
     tInfo.signal = dataDS;
-     
+    
+    tic
     % extract theta with phase and power
     fprintf('theta extraction \n')
      
@@ -84,7 +86,7 @@ else
         tInfo.theta_phase(iD,:) = atan2(imag(hilbert(tInfo.theta_filt(iD,:))), tInfo.theta_filt(iD,:));
         tInfo.theta_amp(iD,:) = abs(hilbert(tInfo.theta_filt(iD,:)));
     end
-     
+    toc
     %%
     % Focus on epochs of data with high theta amplitude
     % high amplitude will be based on greater than 2 std above the mean

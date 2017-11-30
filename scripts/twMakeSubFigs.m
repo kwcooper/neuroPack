@@ -6,34 +6,30 @@
 
 
 
-% legacy code from the 
-% Rat = 'Tio';
-% Session = '170703_1251_CircleTrack';
-% Recording = '2017-07-03_13-08-30';
-% tioChOrd = [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54]; 
-% chOrdTxt = 'Probe order';
-% chOrd = tioChOrd;
-
-
 %2017-08-10_19-14-01 - weird one
 %2017-08-10_11-43-00 - fine
 %2017-08-11_12-54-28 - looks fine
 
 % Contains ephys file information, as well as channel mappings
 % Rat Session Recording selectedChannels? channels reference
+% Split up by rat? New file?
 sessions = {...
 'RioNovelty',  '2017-07-27_16-00',         '2017-08-09_16-57-57',   'all',       [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
-'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_19-14-01',   'sml',       [39 38 60 57], 1; ...
+'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_19-14-01',   'sml',       [39 38 60 57],                                     1; ...
 'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_19-14-01',   'all',       [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
 'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_11-43-00',   'all',       [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
-'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_11-43-00',   'sml',       [39 38 60 57], 1; ...
+'Rio',         '2017-08-10_CircleTrack',   '2017-08-10_11-43-00',   'sml',       [39 38 60 57],                                     1; ...
 'Rio',         '2017-08-11_CircleTrack',   '2017-08-11_12-54-28',   'all',       [43 44 46 45 40 39 37 38 59 60 58 57 52 51 53 54], 8; ...
-'Rio',         '2017-08-20_CircleTrack',   '2017-08-20_12-41-36',   'all',       [11 12 14 13 8 7 5 6 27 28 26 25 20 19 21 22], 8;...
-'Rio',         '2017-08-22_CircleTrack',   '2017-08-22_14-01-24',   'all',       [11 12 14 13 8 7 5 6 27 28 26 25 20 19 21 22], 8;...
+'Rio',         '2017-08-20_CircleTrack',   '2017-08-20_12-41-36',   'all',       [11 12 14 13 8 7 5 6 27 28 26 25 20 19 21 22],     8;...
+'Rio',         '2017-08-22_CircleTrack',   '2017-08-22_14-01-24',   'all',       [11 12 14 13 8 7 5 6 27 28 26 25 20 19 21 22],     8;...
+'Tio',         '170717_1824_CircleTrack',  '2017-07-17_18-30-47',   'sml',       [43 46 40 37 59 58 52 53],                         8;...
+'Tio',         '170717_1824_CircleTrack',  '2017-07-17_18-30-47',   'sml',       [40 37 59 58],                                     1;...
+'Romo',        'CircleTrack_2017-11-22',   '2017-11-22_17-45-40',   'sml',       [56 54 57 61 47 45 38 33],                         1;...
+'Romo',        'CircleTrack_2017-11-27',   '2017-11-27_12-44-08',   'sml',       [56 54 57 61 47 45 38 33],                         1;...
 };
 
 % This selects the session you want to analyze
-sInd = 5;
+sInd = 2;
  
 Rat =  sessions{sInd,1};
 Session =  sessions{sInd,2};
@@ -59,9 +55,9 @@ end
 
 %%
 % new theta Extraction
-disp("Extracting theta cycles...");
+disp('Extracting theta cycles...');
 metho = 'hilbert';
-disp("useing " + metho)
+disp('useing ' + metho)
 root.epoch=[-inf,inf];
 band = [6,10];
 [thetaPhs,~,~] = extractThetaPhase(tInfo.signal(ref,:),tInfo.Fs,metho,band);
@@ -95,11 +91,11 @@ end
  quiverData = processQuiver(tInfo,chTxt, figInfo);
 %  corrPlot(tInfo,chTxt, figInfo)
 %  thetaGreaterMeanPower(tInfo,figInfo)
-  plotAvgWaveImg(root, cycles, ref, figInfo,chOrd)
+  %plotAvgWaveImg(root, cycles, ref, figInfo,chOrd)
 % plotRawWaves(root,tInfo.Fs, figInfo)
   subplotOne(awData, pdData, quiverData, figInfo)
 
-keyboard
+ keyboard
 
 end
 
@@ -177,6 +173,10 @@ aps = rad2deg(avgPkShft(1,1:3)); % !! this is hardcoded to only pick first 3 to 
 x = linspace(0,size(aps,2),size(aps,2)); 
 p = polyfit(x,aps,1);
 pv = polyval(x,p);
+
+B = regress(aps', [x' ones(size(x'))]);
+keyboard;
+
 
 
 quiverData.avgPkShft = rad2deg(avgPkShft); %convert to degrees for plotting
@@ -310,15 +310,40 @@ figure;
 
 %% Raw Waves Pannel
 subplot(2,2,1);
+[nElecs,tPts,nSets] = size(awData.waveData);
+
+for I=1:nElecs
+    awData.waveDataSmooth(I,:)=smoothts(awData.waveData(I), 'g');
+end
+
+% x = linspace(0,size(awData.waveDataSmooth(1,1:end),2),size(awData.waveDataSmooth(1,1:end),2)); 
+% p = polyfit(x,awData.waveDataSmooth(1,1:end,1));
+% pv = polyval(x,p);
+% 
+% 
+% nR = floor(sqrt(nSets));
+% nC = ceil(nSets/nR);
+% t = (1:tPts)/awData.Fs;
+% disp(2.5)
+% lfp_ = awData.waveData / (-1 * 2.5 * rms(awData.waveData(:)));
+% offsets = repmat([1:nElecs]',1,tPts,nSets);
+% lfp_ = lfp_ + offsets;
+% plot(t,lfp_,'k'); axis ij 
+
+
+title('Raw data');
 t = text(0.02,0.98,'A','Units', 'Normalized', 'VerticalAlignment', 'Top');
 s = t.FontSize;
 t.FontSize = 12;
 
-%% avg wave Pannel
+%% avg quiver Pannel
 subplot(2,2,2); 
 %plot(pdData.pkInd(2:2:end)); hold on; %This looks at time between peaks
-plot(quiverData.avgPkShft) %Better; looks at average across phase
+aps = quiverData.avgPkShft;
+plot(aps) %Better; looks at average across phase
 %text(0,0,['slope:', quiverData.p(1)]) %doesn't work well with subplot
+xlabel('Electrode') %!! Is this correct? 
+ylabel('Degree') % !! same here
 title(['Average Peak Shift | Slope =', num2str(quiverData.p(1))]) %!! picking arbitrary slope
 t = text(0.02,0.98,'B','Units', 'Normalized', 'VerticalAlignment', 'Top');
 s = t.FontSize;
@@ -331,15 +356,21 @@ subplot(2,2,3);
 [nElecs,tPts,nSets] = size(awData.waveData);
 nR = floor(sqrt(nSets));
 nC = ceil(nSets/nR);
-
 t = (1:tPts)/awData.Fs;
 disp(2.5)
 lfp_ = awData.waveData / (-1 * 2.5 * rms(awData.waveData(:)));
 offsets = repmat([1:nElecs]',1,tPts,nSets);
 lfp_ = lfp_ + offsets;
 plot(t,lfp_,'k'); axis ij 
+
 %add the find peaks function here? %Smooth?
+
+
+
+
 %Change axis to reflect proper channels
+xlabel('Time') %!! Is this correct? or should it be phase?
+ylabel('Channel') % !! What about the axis though...
 title('Averaged Waves')
 t = text(0.02,0.98,'C','Units', 'Normalized', 'VerticalAlignment', 'Top');
 s = t.FontSize;
@@ -347,8 +378,11 @@ t.FontSize = 12;
 
 %% Quiver Pannel
 subplot(2,2,4);
-quiver(quiverData.u(1:1:end,1:1:end),quiverData.v(1:1:end,1:1:end)); axis ij;  
-title([figInfo.name, ', ',figInfo.chOrdTxt, ', Blank (1403)']);
+quiver(quiverData.u(1:1:end,1:1:end),quiverData.v(1:1:end,1:1:end)); axis ij; 
+xlabel('Channels') % !! yeah 
+ylabel('Channels') % !! same
+title([figInfo.name, ', ',figInfo.chOrdTxt, ', Blank (1403)'])
+%title([figInfo.name, ', ',figInfo.chOrdTxt, ', Blank (1403)']);
 %Axis should change to reflect the proper channels
 t = text(0.02,0.98,'D','Units', 'Normalized', 'VerticalAlignment', 'Top');
 s = t.FontSize;
