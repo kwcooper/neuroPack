@@ -38,7 +38,7 @@ lfpMat = nan(length(LFP_Data), size(tmpData,2));
 
 if showBuildMat; subInd = 1; figure; end
 
-fprintf('Loading(%i): ',length(files)); tic;
+fprintf('Loading(%i): ',length(LFP_Data)); tic;
 for ch = 1:length(LFP_Data)
     % This is important! to see whcih channel the lfp belongs to. 
     ntrode = LFP_Data(ch).ntrode_id; fprintf('%i ',ch);
@@ -84,8 +84,9 @@ lfpStruct.info.ratName = metaRat.ratName;
 
 
 %% Save our hard work!
-if saveStruct; save(lfpStruct.info.dataDir(1:end-1), 'lfpStruct'); 
-    fprintf(['\nLFP Saved as ', lfpStruct.info.dataDir(1:end-1), '!\n']); end
+% strip the .LFP/ from the file name
+if saveStruct; save(lfpStruct.info.dataDir(1:end-5), 'lfpStruct'); 
+    fprintf(['\nLFP Saved as ', lfpStruct.info.dataDir(1:end-5), '!\n']); end
 
 fprintf('\nFinished! \n'); toc;
 
