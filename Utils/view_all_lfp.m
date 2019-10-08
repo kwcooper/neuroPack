@@ -1,5 +1,8 @@
 function view_all_lfp()
 
+% TODO:
+%   Abstract this code into a working function!
+
     num_snaps = 5;     % set the number of lfp snapshots that you'd like
     recLength = 1000;  % set how long you'd like the lfp clip to be
     save_figs = 1;
