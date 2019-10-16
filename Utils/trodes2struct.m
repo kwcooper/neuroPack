@@ -14,8 +14,9 @@ function [lfpStruct] = trodes2struct(path, dataDir, saveStruct, metaRat)
 fprintf('Importing the data from Trodes format...\n')
 LFP_Data = importTrodesLFP(path, dataDir);
 
-
-dsRate = 500;
+%fs = LFP_Data(1).clockrate; % TODO: NEED TO CONFIRM IF THIS IS THE FS!!! (it isn't.. see below)
+fs = 1500; % as per the downsampling from exportlfp and mattia's recomendation
+dsRate = 1000;
 dsBool = true;
 % saveStruct = true;       
 showBuildMat = 0;        % If we want to see how the lfp is being sorted...
@@ -28,7 +29,6 @@ showBuildMat = 0;        % If we want to see how the lfp is being sorted...
 tmpData = LFP_Data(1).fields.data';
     
 if dsBool % downsample the data
-fs = LFP_Data(1).clockrate; % TODO: NEED TO CONFIRM IF THIS IS THE FS!!!
 dsStep = ceil(fs / dsRate);
 tmpData = tmpData(1:dsStep:end); 
 end
@@ -45,7 +45,7 @@ for ch = 1:length(LFP_Data)
     tmpData = LFP_Data(ch).fields.data';
     
     if dsBool % downsample the data
-    fs = LFP_Data(ch).clockrate; % TODO: NEED TO CONFIRM IF THIS IS THE FS!!!
+    %fs = LFP_Data(ch).clockrate; % TODO: NEED TO CONFIRM IF THIS IS THE FS!!!
     dsStep = ceil(fs / dsRate);
     tmpData = tmpData(1:dsStep:end); 
     end
@@ -78,15 +78,20 @@ lfpStruct.info.date = date;
 lfpStruct.info.origFormat = 'Trodes';
 lfpStruct.info.low_pass_filter = LFP_Data(ch).low_pass_filter;
 lfpStruct.info.voltage_scaling = LFP_Data(ch).voltage_scaling;
+% lfpStruct.info.clockrate = LFP_Data(ch).clockrate; % TODO: NEED TO CONFIRM IF THIS IS THE FS!!!                                                                                                                                                                     
 lfpStruct.info.original_file = LFP_Data(ch).original_file;
 
 lfpStruct.info.ratName = metaRat.ratName; 
 
+fprintf('\n');
 
 %% Save our hard work!
 % strip the .LFP/ from the file name
-if saveStruct; save(lfpStruct.info.dataDir(1:end-5), 'lfpStruct'); 
-    fprintf(['\nLFP Saved as ', lfpStruct.info.dataDir(1:end-5), '!\n']); end
+if saveStruct 
+    structPath = [fullfile('D:','Documents','Data','lfpStructs'), filesep]; cd(structPath);
+    save(lfpStruct.info.dataDir(19:end-5), 'lfpStruct'); 
+    disp(['LFP Saved as ', structPath, '!']); 
+end
 
 fprintf('\nFinished! \n'); toc;
 
