@@ -1,8 +1,9 @@
 
 function [lfpStruct] = trodes2struct(path, dataDir, saveStruct, metaRat)
-% Script to get a look at the trodes data. 
+% Script to get a look at the trodes data. Imports, downsamples, sorts, and
+% saves to a more useful struct for further analysis. 
 % Requires importTrodesLFP
-% init 190910 kwc ud 190926 kwc
+% init 190910 kwc ud 191016 kwc
 
 % Call the wrapper function that grabs all of the channels and stores them
 % in a handy struct for further use.
@@ -15,9 +16,9 @@ fprintf('Importing the data from Trodes format...\n')
 LFP_Data = importTrodesLFP(path, dataDir);
 
 %fs = LFP_Data(1).clockrate; % TODO: NEED TO CONFIRM IF THIS IS THE FS!!! (it isn't.. see below)
-fs = 1500; % as per the downsampling from exportlfp and mattia's recomendation
-dsRate = 1000;
-dsBool = true;
+fs = 1500;        % as per the downsampling from exportlfp and mattia's recomendation
+fs_new = 1000;    % desired sampling rate (if dsBool is true)
+dsBool = true;    % do ya wanna downsample? (enabled by default)
 % saveStruct = true;       
 showBuildMat = 0;        % If we want to see how the lfp is being sorted...
 
@@ -28,10 +29,8 @@ showBuildMat = 0;        % If we want to see how the lfp is being sorted...
 % Do some precalculations to figure out sizes
 tmpData = LFP_Data(1).fields.data';
     
-if dsBool % downsample the data
-dsStep = ceil(fs / dsRate);
-tmpData = tmpData(1:dsStep:end); 
-end
+% downsample the data
+if dsBool; tmpData = resampSig(tmpData, fs, fs_new); end
 
 % allocate an empty array for sorting
 lfpMat = nan(length(LFP_Data), size(tmpData,2)); 
@@ -44,11 +43,8 @@ for ch = 1:length(LFP_Data)
     ntrode = LFP_Data(ch).ntrode_id; fprintf('%i ',ch);
     tmpData = LFP_Data(ch).fields.data';
     
-    if dsBool % downsample the data
-    %fs = LFP_Data(ch).clockrate; % TODO: NEED TO CONFIRM IF THIS IS THE FS!!!
-    dsStep = ceil(fs / dsRate);
-    tmpData = tmpData(1:dsStep:end); 
-    end
+    % downsample the data
+    if dsBool; tmpData = resampSig(tmpData, fs, fs_new); end
     
     lfpMat(ntrode, :) = tmpData;
     
@@ -64,7 +60,7 @@ for ch = 1:length(LFP_Data)
     end
 end
 
-if dsBool; fs = fs/dsStep; end
+
 
 
 %%  Wrap it all up with a bow and ribbon
@@ -73,7 +69,7 @@ lfpStruct.data = lfpMat;
 lfpStruct.info.dataDir =  dataDir; % todo change to meta
 lfpStruct.info.path = path;
 lfpStruct.info.dsBool = dsBool;
-lfpStruct.info.fs = fs;
+lfpStruct.info.fs = fs_new;
 lfpStruct.info.date = date;
 lfpStruct.info.origFormat = 'Trodes';
 lfpStruct.info.low_pass_filter = LFP_Data(ch).low_pass_filter;
