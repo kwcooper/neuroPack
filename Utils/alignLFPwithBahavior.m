@@ -1,4 +1,4 @@
-function alignLFPwithBahavior(behavData, lfpStruct, buff_secs)
+function [alignedAx] = alignLFPwithBahavior(behavData, lfpStruct, buff_secs)
 %
 %
 %  The timestamps are computed by:
@@ -17,7 +17,7 @@ viz = 0; % to see the new alignment
 bd = behavData.ssnData;
 lfp = lfpStruct.data(10,:); % TODO change
 
-buff_secs = 122.13; % add buffer to task data in secs
+%buff_secs = 122.13; % add buffer to task data in secs
 fs = lfpStruct.info.fs; 
 
 % compute some LFP stats that we may want later
@@ -42,27 +42,51 @@ rpots_redux = round(pots - pots(1));
 
 task_min = (rpits(end) - rpits(1) ) / 60; % This isn't the most accurate, use poke out
 task_fs = 1; % TODO
-
-% need to generate the poking data at the same fs as the lfp
-tstPke = linspace(0, rpits_redux(end), rpits_redux(end)*fs);
-pkes = ismember(round(tstPke), rpits_redux);
 buf = zeros(1,buff_secs*fs);
-newData = [buf, pkes];  % add the offset to the poking data
-pkeTme = linspace(0, size(pkes,2)/fs, size(pkes,2));
+
+% Shift the poke in/out data according to the buffer
+% need to generate the poking data at the same fs as the lfp
+pits_empty = linspace(0, rpits_redux(end), rpits_redux(end)*fs);
+pits_log = ismember(round(pits_empty), rpits_redux);
+pits_new = [buf, pits_log];  % add the offset to the poking data
+
+pots_empty = linspace(0, rpots_redux(end), rpots_redux(end)*fs);
+pots_log = ismember(round(pots_empty), rpots_redux);
+pots_new = [buf, pots_log];  % add the offset to the poking data
+
+% compute the poke in/out time axis
 bufTme = linspace((-size(buf,2)/fs), 0, size(buf,2)+1);
-behavTme = [bufTme(:,1:end-1), pkeTme];
+pits_tme = linspace(0, size(pits_log,2)/fs, size(pits_log,2));
+pitsTmeax = [bufTme(:,1:end-1), pits_tme];
+pots_tme = linspace(0, size(pots_log,2)/fs, size(pots_log,2));
+potsTmeax = [bufTme(:,1:end-1), pots_tme];
+
+% now let's fix the lfp time axis
+lfpTmeax = [bufTme(:,1:end-1), timeax];
+lfpTmeax = lfpTmeax(:,1:size(lfp,2));
 
 % Check if what you get is what you want
 if viz
     figure; 
-    subplot(3,1,1);
-    plot(pkeTme)
-    subplot(3,1,2);
-    plot(bufTme)
-    subplot(3,1,3);
-    plot(behavTme)
+    a = subplot(3,1,1);
+    plot(lfpTmeax, lfp)
+
+    b = subplot(3,1,2);
+    plot(pitsTmeax, pits_new)
+    
+    c = subplot(3,1,3);
+    plot(potsTmeax, pots_new)
+    linkaxes([a,b,c],'x');
 end
 
-% now let's look at the 
+% pack it all up
+alignedAx.lfpTmeax = lfpTmeax;
+alignedAx.lfp = lfp;
+alignedAx.pitsTmeax = pitsTmeax;
+alignedAx.pits_new = pits_new;
+alignedAx.potsTmeax = potsTmeax;
+alignedAx.pots_new = pots_new;
+alignedAx.stats.task_min = task_min;
+alignedAx.stats.task_fs = task_fs;
 
 end
